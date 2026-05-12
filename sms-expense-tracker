@@ -1,0 +1,306 @@
+
+# ==============================================================================
+# 📈 SMS-Based Personal Expense Tracker (Final Version)
+# ==============================================================================
+import re
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import xml.etree.ElementTree as ET
+
+# --- 1. CONFIGURATION -------------------------------------------------------
+
+SMS_FILE_PATH = 'sms.xml'
+
+CATEGORIES = {
+    'Shopping': ['AMAZON', 'FLIPKART', 'MYNTRA', 'LENSKART', 'EKART'],
+    'Food': ['ZOMATO', 'SWIGGY', 'STARBUCKS', 'KFC', 'DOMINO'],
+    'Groceries': ['BIGBAZAAR', 'JIOMART', 'DMART', 'ZEPTONOW', 'BLINKIT'],
+    'Travel': ['UBER', 'OLA', 'IRCTC', 'REDBUS', 'IXIGO'],
+    'Bills': ['VODAFONE', 'AIRTEL', 'BSES', 'JIO'],
+    'Cash': ['ATM', 'WITHDRAWAL'],
+    'Payments': ['PAYTM', 'GPAY', 'GOOGLE PAY', 'BHARATPE'],
+    'UPI': ['UPI']
+}
+
+BANK_KEYWORDS = {
+    'Bank of Baroda': ['BOB'],
+    'SBI': ['SBI'],
+    'HDFC': ['HDFC'],
+    'ICICI': ['ICICI'],
+    'Axis Bank': ['AXIS'],
+    'Yes Bank': ['YESBNK']
+}
+
+# --- 2. HELPER FUNCTIONS ----------------------------------------------------
+
+def generate_category_report(df, category_name):
+    """
+    Filters for a specific category and prints a date-wise list of its transactions.
+    """
+    if df is None or df.empty:
+        print("No data available to generate a category report.")
+        return
+
+    # Filter for the chosen category (case-insensitive)
+    category_df = df[df['Category'].str.lower() == category_name.lower()].copy()
+
+    if category_df.empty:
+        print(f"\nNo transactions found for the '{category_name}' category.")
+        return
+
+    print("\n" + "="*50)
+    print(f"🧾 DETAILED REPORT FOR CATEGORY: {category_name.title()}")
+    print("="*50)
+
+    # Sort by date before grouping
+    category_df = category_df.sort_values(by='Date')
+
+    # Group by date and iterate
+    for date, group in category_df.groupby('Date'):
+        print(f"\n--- Transactions for {date.strftime('%d-%m-%Y')} ---")
+        for _, row in group.iterrows():
+            print(f"  Amount: ₹{row['Amount']:<10,.2f} | Merchant: {row['Merchant']}")
+            
+    print("\n" + "="*50)
+
+
+def generate_financial_summary(df):
+    """
+    Calculates and prints the total income, expenses, and net savings.
+    """
+    if df is None or df.empty:
+        return
+
+    # Separate income and expenses
+    income_df = df[df['Type'] == 'Income']
+    expense_df = df[df['Type'] == 'Expense']
+
+    # Calculate totals
+    total_income = income_df['Amount'].sum()
+    total_expenses = expense_df['Amount'].sum()
+    net_savings = total_income - total_expenses
+    
+    print("\n" + "="*50)
+    print("💰 FINANCIAL SUMMARY")
+    print("="*50)
+    print(f"Total Income:    ₹{total_income:15,.2f}")
+    print(f"Total Expenses:  ₹{total_expenses:15,.2f}")
+    print("-" * 30)
+    print(f"Net Savings:     ₹{net_savings:15,.2f}")
+    print("="*50)
+
+def identify_bank(address):
+    """Identifies the bank from the SMS sender address."""
+    for bank, keywords in BANK_KEYWORDS.items():
+        for keyword in keywords:
+            if keyword in address.upper():
+                return bank
+    return 'Other Bank'
+
+def categorize_transaction(merchant_name):
+    """Categorizes a transaction based on the merchant name."""
+    merchant_upper = merchant_name.upper()
+    for category, keywords in CATEGORIES.items():
+        for keyword in keywords:
+            if keyword in merchant_upper:
+                return category
+    if 'UPI' in merchant_upper or '@' in merchant_name:
+        return 'UPI'
+    return 'Other'
+
+# --- 3. CORE LOGIC ----------------------------------------------------------
+
+def load_sms_from_xml(file_path):
+    """Loads SMS data from an XML file, extracting body, date, and address."""
+    try:
+        tree = ET.parse(file_path)
+        root = tree.getroot()
+        messages = []
+        for sms in root.findall('sms'):
+            body = sms.get('body')
+            date = sms.get('readable_date')
+            address = sms.get('address')
+            if body and date and address:
+                messages.append({'body': body, 'date': date, 'address': address})
+        print(f"✅ Successfully loaded {len(messages)} messages from XML file.")
+        return messages
+    except FileNotFoundError:
+        print(f"❌ ERROR: The file '{file_path}' was not found.")
+        return None
+    except ET.ParseError:
+        print(f"❌ ERROR: Could not parse the XML file.")
+        return None
+
+def parse_sms_messages(messages):
+    """
+    Parses SMS messages to extract both expenses (debits) and income (credits).
+    """
+    # Pattern for expenses (debits, transfers, withdrawals)
+    pattern_expense = re.compile(
+        r"(?:Rs|INR)\.?\s*([\d,]+\.?\d{0,2})\s*(?:debited from|transferred from).*?(?:credited to|to:)\s+([\w.\-@/]+)",
+        re.IGNORECASE
+    )
+    pattern_withdrawal = re.compile(
+        r"Cash withdrawal of\s*(?:Rs|INR)\s*([\d,]+\.?\d{0,2})",
+        re.IGNORECASE
+    )
+    
+    # NEW: Pattern for income (credits)
+    pattern_income = re.compile(
+        r"(?:credited|Credited to)\s*(?:with|INR|Rs\.?)\s*([\d,]+\.?\d{0,2}).*?(?:by|from)\s+([\w.\s_]+?)(?:\.|thru)",
+        re.IGNORECASE
+    )
+
+    transactions = []
+    for msg in messages:
+        message_body = msg['body']
+        message_date = msg['date']
+        sender_address = msg['address']
+
+        # Skip the specific large withdrawal message
+        if "Cash withdrawal of Rs 1,00,000.00" in message_body:
+            continue
+
+        match_expense = pattern_expense.search(message_body)
+        match_withdrawal = pattern_withdrawal.search(message_body)
+        match_income = pattern_income.search(message_body)
+        
+        transaction = None
+
+        if match_expense:
+            amount_str, merchant = match_expense.groups()
+            transaction = {'Type': 'Expense', 'Merchant': merchant, 'Amount': float(amount_str.replace(',', ''))}
+        elif match_withdrawal:
+            amount_str, = match_withdrawal.groups()
+            transaction = {'Type': 'Expense', 'Merchant': 'ATM Withdrawal', 'Amount': float(amount_str.replace(',', ''))}
+        elif match_income:
+            amount_str, source = match_income.groups()
+            transaction = {'Type': 'Income', 'Merchant': source.strip(), 'Amount': float(amount_str.replace(',', ''))}
+
+        if transaction:
+            transaction['Date'] = pd.to_datetime(message_date).strftime('%d-%m-%Y')
+            transaction['Category'] = categorize_transaction(transaction['Merchant']) if transaction['Type'] == 'Expense' else 'Income'
+            transaction['Bank'] = identify_bank(sender_address)
+            transactions.append(transaction)
+
+    print(f"✅ Success! Parsed {len(transactions)} total transactions (Income & Expenses).")
+    return transactions
+
+def generate_upi_report(df):
+    """
+    Filters for UPI transactions and prints a date-wise list.
+    """
+    if df is None or df.empty:
+        print("No data available to generate UPI report.")
+        return
+
+    # Filter for transactions categorized as 'UPI' or 'Payments'
+    upi_df = df[df['Category'].isin(['UPI', 'Payments'])].copy()
+
+    if upi_df.empty:
+        print("\nNo UPI transactions found to report.")
+        return
+
+    print("\n" + "="*50)
+    print("📱 DATE-WISE UPI TRANSACTION REPORT")
+    print("="*50)
+
+    # Sort by date before grouping
+    upi_df = upi_df.sort_values(by='Date')
+
+    # Group by date and iterate through each day's transactions
+    for date, group in upi_df.groupby('Date'):
+        print(f"\n--- Transactions for {date.strftime('%d-%m-%Y')} ---")
+        # Loop through each transaction in the group
+        for _, row in group.iterrows():
+            print(f"  Amount: ₹{row['Amount']:<10,.2f} | To: {row['Merchant']}")
+            
+    print("\n" + "="*50)
+
+def create_report_dataframe(transactions):
+    """Converts a list of transactions into a structured Pandas DataFrame."""
+    if not transactions:
+        return None
+    df = pd.DataFrame(transactions)
+    df['Date'] = pd.to_datetime(df['Date'], format='%d-%m-%Y')
+    df['Amount'] = pd.to_numeric(df['Amount'])
+    df = df.sort_values(by='Date').reset_index(drop=True)
+    return df
+
+# --- 4. REPORTING FUNCTIONS -------------------------------------------------
+
+def generate_bank_reports(df):
+    """Generates a separate spending report for each bank."""
+    if df is None or df.empty:
+        print("No data available to generate reports.")
+        return
+    banks = df['Bank'].unique()
+    for bank in banks:
+        print("\n" + "="*50)
+        print(f"📊 SPENDING REPORT FOR: {bank}")
+        print("="*50)
+        bank_df = df[df['Bank'] == bank]
+        summary = bank_df.groupby('Category')['Amount'].sum().reset_index()
+        total_spent = summary['Amount'].sum()
+        print(summary)
+        print(f"\nTotal Amount Spent from {bank}: ₹{total_spent:,.2f}")
+        print("="*50)
+
+def plot_daily_spending(df):
+    """Groups spending by day and saves a line chart of the trend."""
+    if df is None or df.empty:
+        return
+    daily_summary = df.groupby('Date')['Amount'].sum()
+    plt.figure(figsize=(15, 7))
+    daily_summary.plot(kind='line', marker='.', linestyle='-', color='royalblue')
+    plt.title('Daily Spending Trend')
+    plt.xlabel('Date')
+    plt.ylabel('Total Amount Spent (₹)')
+    plt.grid(True, which='both', linestyle='--', linewidth=0.5)
+    plt.tight_layout()
+    chart_filename = 'daily_spending_trend.png'
+    plt.savefig(chart_filename, dpi=150)
+    print(f"\n✅ Daily spending trend chart saved as '{chart_filename}'")
+
+# --- 5. MAIN EXECUTION ------------------------------------------------------
+
+if __name__ == "__main__":
+    all_messages = load_sms_from_xml(SMS_FILE_PATH)
+    
+    if all_messages:
+        parsed_transactions = parse_sms_messages(all_messages)
+        
+        if parsed_transactions:
+            report_df = create_report_dataframe(parsed_transactions)
+            
+            # --- Generate All Reports ---
+            
+            # 1. High-level financial summary
+            generate_financial_summary(report_df)
+            
+            # 2. Bank-wise expense reports
+            expense_only_df = report_df[report_df['Type'] == 'Expense']
+            generate_bank_reports(expense_only_df)
+            
+            # 3. Daily spending trend chart
+            plot_daily_spending(expense_only_df)
+            
+            # --- Optional Reports ---
+
+            # Option for detailed UPI list
+            show_upi_details = input("\nDisplay a detailed list of all UPI transactions? (y/n): ")
+            if show_upi_details.lower() == 'y':
+                generate_upi_report(expense_only_df)
+            
+            # NEW: Option for category-specific list
+            show_category_details = input("\nDisplay a detailed report for a specific category? (y/n): ")
+            if show_category_details.lower() == 'y':
+                # Show the user what categories are available to choose from
+                available_categories = expense_only_df['Category'].unique()
+                print(f"Available categories: {', '.join(available_categories)}")
+                
+                category_choice = input("Please enter the category name you want to see: ")
+                generate_category_report(expense_only_df, category_choice)
+
+            print("\nAnalysis complete.")

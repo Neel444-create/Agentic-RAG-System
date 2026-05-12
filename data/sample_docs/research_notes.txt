@@ -1,0 +1,9 @@
+RAG Research Notes
+
+Retrieval-Augmented Generation reduces hallucination risk by grounding generation in retrieved
+documents. Chunk size influences retrieval quality: chunks that are too small lose context, while
+chunks that are too large can dilute similarity.
+
+Evaluation should measure retrieval recall, answer faithfulness, and the model's ability to say
+it does not know when documents do not contain the answer.
+

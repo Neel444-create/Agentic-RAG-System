@@ -1,0 +1,9 @@
+Support Playbook
+
+Support agents should acknowledge new customer tickets within 4 business hours. Escalations to
+Engineering must include reproduction steps, customer impact, logs, and screenshots when
+available.
+
+Refund requests should be routed to Billing. Support agents may not promise custom contract terms
+without Sales approval.
+

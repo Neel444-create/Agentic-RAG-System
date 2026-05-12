@@ -1,0 +1,130 @@
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <vector>
+#include <iomanip>
+using namespace std;
+
+class Contact {
+public:
+    string name;
+    string phone;
+    string email;
+
+    Contact() {}
+    Contact(string name, string phone, string email) 
+        : name(name), phone(phone), email(email) {}
+
+    string serialize() const {
+        return name + "," + phone + "," + email;
+    }
+
+    static Contact deserialize(const string& data) {
+        stringstream ss(data);
+        string name, phone, email;
+        getline(ss, name, ',');
+        getline(ss, phone, ',');
+        getline(ss, email, ',');
+        return Contact(name, phone, email);
+    }
+
+    void display() const {
+        cout << left << setw(20) << name
+             << setw(15) << phone
+             << setw(25) << email << endl;
+    }
+};
+
+class PhoneBook {
+    vector<Contact> contacts;
+
+public:
+    PhoneBook() {
+        loadFromFile();
+    }
+
+    void addContact() {
+        string name, phone, email;
+        cout << "Enter name: ";
+        getline(cin, name);
+        cout << "Enter phone: ";
+        getline(cin, phone);
+        cout << "Enter email: ";
+        getline(cin, email);
+        contacts.emplace_back(name, phone, email);
+        saveToFile();
+        cout << "Contact added successfully.\n";
+    }
+
+    void searchContact() {
+        string query;
+        cout << "Enter name or phone to search: ";
+        getline(cin, query);
+        bool found = false;
+        for (const auto& contact : contacts) {
+            if (contact.name.find(query) != string::npos ||
+                contact.phone.find(query) != string::npos) {
+                contact.display();
+                found = true;
+            }
+        }
+        if (!found) cout << "No matching contact found.\n";
+    }
+
+    void displayAll() {
+        if (contacts.empty()) {
+            cout << "No contacts to display.\n";
+            return;
+        }
+
+        cout << left << setw(20) << "Name"
+             << setw(15) << "Phone"
+             << setw(25) << "Email" << endl;
+        cout << string(60, '-') << endl;
+        for (const auto& contact : contacts)
+            contact.display();
+    }
+
+private:
+    void loadFromFile() {
+        contacts.clear();
+        ifstream infile("contacts.txt");
+        string line;
+        while (getline(infile, line)) {
+            if (!line.empty()) {
+                contacts.push_back(Contact::deserialize(line));
+            }
+        }
+    }
+
+    void saveToFile() {
+        ofstream outfile("contacts.txt");
+        for (const auto& contact : contacts) {
+            outfile << contact.serialize() << "\n";
+        }
+    }
+};
+
+int main() {
+    PhoneBook pb;
+    int choice;
+    string temp;
+    while (true) {
+        cout << "\nPhonebook Menu:\n";
+        cout << "1. Add Contact\n";
+        cout << "2. Search Contact\n";
+        cout << "3. Display All Contacts\n";
+        cout << "4. Exit\n";
+        cout << "Enter your choice: ";
+        getline(cin, temp);
+        stringstream(temp) >> choice;
+
+        switch (choice) {
+            case 1: pb.addContact(); break;
+            case 2: pb.searchContact(); break;
+            case 3: pb.displayAll(); break;
+            case 4: cout << "Exiting...\n"; return 0;
+            default: cout << "Invalid choice.\n";
+        }
+    }
+}

@@ -1,0 +1,9 @@
+Customer Data Handling Policy
+
+Customer data must be stored only in approved systems with encryption at rest and in transit.
+Employees may not download customer records to personal devices. Access to production customer
+data requires manager approval and a documented business reason.
+
+Secrets such as API keys, passwords, and tokens must never be committed to source control.
+Suspected exposure of secrets must be reported to Security within 30 minutes.
+

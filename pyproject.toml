@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agentic-rag-assignment"
+version = "0.1.0"
+description = "Lightweight agentic RAG system for document ingestion, retrieval, and grounded answers."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "chromadb>=0.5.0",
+  "numpy>=1.26.0",
+  "openai>=1.40.0",
+  "pypdf>=4.0.0",
+  "python-dotenv>=1.0.0",
+  "streamlit>=1.36.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0.0",
+  "ruff>=0.5.0",
+]
+
+[project.scripts]
+rag-agent = "rag_agent.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+

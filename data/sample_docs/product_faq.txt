@@ -1,0 +1,8 @@
+Product FAQ
+
+The analytics dashboard refreshes standard metrics every 15 minutes. Enterprise customers can
+request hourly export jobs to their data warehouse.
+
+Role-based access control is available on all paid plans. Single sign-on is available only on the
+Enterprise plan.
+

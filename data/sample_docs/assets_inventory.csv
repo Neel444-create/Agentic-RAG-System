@@ -1,0 +1,7 @@
+asset_id,owner,system,risk_level,review_frequency
+A-100,Security,Identity Provider,high,quarterly
+A-101,Data Platform,Warehouse,high,quarterly
+A-102,Support,Ticketing System,medium,semiannual
+A-103,Marketing,Email Automation,medium,annual
+A-104,Finance,Expense Tool,low,annual
+

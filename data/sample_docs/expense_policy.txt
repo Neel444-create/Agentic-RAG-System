@@ -1,0 +1,8 @@
+Expense Reimbursement Policy
+
+Employees must submit receipts for expenses above 25 USD. Meals during approved business travel
+are reimbursable up to 60 USD per day unless a client contract specifies a different cap.
+
+Employees may not approve their own expense reports. Approval must come from the employee's
+manager or a delegated finance approver.
+

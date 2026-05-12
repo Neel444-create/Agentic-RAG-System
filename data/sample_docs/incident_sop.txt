@@ -1,0 +1,11 @@
+Incident Management SOP
+
+Priority 1 incidents affect all customers or critical revenue systems. The response SLA is 15
+minutes, and the incident commander must open a bridge within 10 minutes. Status updates must be
+posted every 30 minutes until mitigation.
+
+Priority 2 incidents affect a subset of customers or important internal workflows. The response
+SLA is 1 hour, and updates are required every 2 hours.
+
+After resolution, the owner must publish a post-incident review within 3 business days.
+

@@ -1,0 +1,7 @@
+Release Process
+
+Production releases require passing automated tests, code review approval, and a rollback plan.
+High-risk releases must include a change advisory note and named release captain.
+
+Release notes should describe customer-visible changes, migration steps, and known limitations.
+
