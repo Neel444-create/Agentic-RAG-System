@@ -22,11 +22,14 @@ class ChromaVectorStore:
             name=collection_name,
             metadata={"hnsw:space": "cosine"},
         )
+        self.collection_name = collection_name
 
     def reset(self) -> None:
-        ids = self.collection.get(include=[])["ids"]
-        if ids:
-            self.collection.delete(ids=ids)
+        self.client.delete_collection(name=self.collection_name)
+        self.collection = self.client.get_or_create_collection(
+            name=self.collection_name,
+            metadata={"hnsw:space": "cosine"},
+        )
 
     def add(self, chunks: list[Chunk]) -> None:
         if not chunks:
@@ -47,7 +50,7 @@ class ChromaVectorStore:
         )
 
     def search(self, query: str, top_k: int = 5) -> list[SearchResult]:
-        query_embedding = self.embedder.embed([query])[0]
+        query_embedding = self.embedder.embed([query], task_type="RETRIEVAL_QUERY")[0]
         response = self.collection.query(
             query_embeddings=[query_embedding],
             n_results=top_k,

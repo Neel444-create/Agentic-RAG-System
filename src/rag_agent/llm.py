@@ -10,10 +10,10 @@ class GroundedAnswerer:
     def __init__(self, settings: Settings):
         self.settings = settings
         self.client = None
-        if settings.openai_api_key:
-            from openai import OpenAI
+        if settings.gemini_api_key:
+            from google import genai
 
-            self.client = OpenAI(api_key=settings.openai_api_key)
+            self.client = genai.Client(api_key=settings.gemini_api_key)
 
     @property
     def uses_llm(self) -> bool:
@@ -23,10 +23,10 @@ class GroundedAnswerer:
         if not contexts:
             return "I do not know based on the ingested documents."
         if self.client:
-            return self._openai_answer(question, contexts)
+            return self._gemini_answer(question, contexts)
         return self._extractive_answer(question, contexts)
 
-    def _openai_answer(self, question: str, contexts: list[SearchResult]) -> str:
+    def _gemini_answer(self, question: str, contexts: list[SearchResult]) -> str:
         context_block = "\n\n".join(
             f"[{index}] Source: {result.chunk.metadata.get('source_name', result.chunk.source)}\n"
             f"{result.chunk.text}"
@@ -37,15 +37,11 @@ class GroundedAnswerer:
             "say: I do not know based on the ingested documents. Cite sources inline as [1], [2].\n\n"
             f"Context:\n{context_block}\n\nQuestion: {question}"
         )
-        response = self.client.chat.completions.create(
+        response = self.client.models.generate_content(
             model=self.settings.chat_model,
-            messages=[
-                {"role": "system", "content": "You are a grounded RAG assistant. Do not hallucinate."},
-                {"role": "user", "content": prompt},
-            ],
-            temperature=0.0,
+            contents=("You are a grounded RAG assistant. Do not hallucinate.\n\n" + prompt),
         )
-        return response.choices[0].message.content or "I do not know based on the ingested documents."
+        return response.text or "I do not know based on the ingested documents."
 
     def _extractive_answer(self, question: str, contexts: list[SearchResult]) -> str:
         question_terms = {

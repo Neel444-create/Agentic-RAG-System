@@ -24,9 +24,9 @@ class Settings:
     chunk_overlap: int = 160
     top_k: int = int(os.getenv("RAG_TOP_K", "5"))
     min_similarity: float = float(os.getenv("RAG_MIN_SIMILARITY", "0.18"))
-    openai_api_key: str | None = os.getenv("OPENAI_API_KEY") or None
-    embedding_model: str = os.getenv("RAG_EMBEDDING_MODEL", "text-embedding-3-small")
-    chat_model: str = os.getenv("RAG_CHAT_MODEL", "gpt-4o-mini")
+    gemini_api_key: str | None = os.getenv("GEMINI_API_KEY") or None
+    embedding_model: str = os.getenv("RAG_EMBEDDING_MODEL", "gemini-embedding-001")
+    chat_model: str = os.getenv("RAG_CHAT_MODEL", "gemini-2.0-flash")
 
     def resolve(self, path: Path | str) -> Path:
         path = Path(path)

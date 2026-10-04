@@ -15,20 +15,26 @@ TOKEN_PATTERN = re.compile(r"[a-zA-Z0-9]+")
 
 class Embedder(ABC):
     @abstractmethod
-    def embed(self, texts: list[str]) -> list[list[float]]:
+    def embed(self, texts: list[str], task_type: str = "RETRIEVAL_DOCUMENT") -> list[list[float]]:
         raise NotImplementedError
 
 
-class OpenAIEmbedder(Embedder):
+class GeminiEmbedder(Embedder):
     def __init__(self, settings: Settings):
-        from openai import OpenAI
+        from google import genai
 
-        self.client = OpenAI(api_key=settings.openai_api_key)
+        self.client = genai.Client(api_key=settings.gemini_api_key)
         self.model = settings.embedding_model
 
-    def embed(self, texts: list[str]) -> list[list[float]]:
-        response = self.client.embeddings.create(model=self.model, input=texts)
-        return [item.embedding for item in response.data]
+    def embed(self, texts: list[str], task_type: str = "RETRIEVAL_DOCUMENT") -> list[list[float]]:
+        from google.genai import types
+
+        response = self.client.models.embed_content(
+            model=self.model,
+            contents=texts,
+            config=types.EmbedContentConfig(task_type=task_type, output_dimensionality=768),
+        )
+        return [embedding.values for embedding in response.embeddings]
 
 
 class HashingEmbedder(Embedder):
@@ -37,7 +43,7 @@ class HashingEmbedder(Embedder):
     def __init__(self, dimensions: int = 384):
         self.dimensions = dimensions
 
-    def embed(self, texts: list[str]) -> list[list[float]]:
+    def embed(self, texts: list[str], task_type: str = "RETRIEVAL_DOCUMENT") -> list[list[float]]:
         return [self._embed_one(text) for text in texts]
 
     def _embed_one(self, text: str) -> list[float]:
@@ -55,7 +61,7 @@ class HashingEmbedder(Embedder):
 
 
 def build_embedder(settings: Settings) -> Embedder:
-    if settings.openai_api_key:
-        return OpenAIEmbedder(settings)
+    if settings.gemini_api_key:
+        return GeminiEmbedder(settings)
     return HashingEmbedder()
 
