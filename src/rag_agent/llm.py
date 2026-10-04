@@ -37,11 +37,14 @@ class GroundedAnswerer:
             "say: I do not know based on the ingested documents. Cite sources inline as [1], [2].\n\n"
             f"Context:\n{context_block}\n\nQuestion: {question}"
         )
-        response = self.client.models.generate_content(
-            model=self.settings.chat_model,
-            contents=("You are a grounded RAG assistant. Do not hallucinate.\n\n" + prompt),
-        )
-        return response.text or "I do not know based on the ingested documents."
+        try:
+            response = self.client.models.generate_content(
+                model=self.settings.chat_model,
+                contents=("You are a grounded RAG assistant. Do not hallucinate.\n\n" + prompt),
+            )
+            return response.text or self._extractive_answer(question, contexts)
+        except Exception:
+            return self._extractive_answer(question, contexts)
 
     def _extractive_answer(self, question: str, contexts: list[SearchResult]) -> str:
         question_terms = {

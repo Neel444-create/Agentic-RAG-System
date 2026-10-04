@@ -26,7 +26,7 @@ class Settings:
     min_similarity: float = float(os.getenv("RAG_MIN_SIMILARITY", "0.18"))
     gemini_api_key: str | None = os.getenv("GEMINI_API_KEY") or None
     embedding_model: str = os.getenv("RAG_EMBEDDING_MODEL", "gemini-embedding-001")
-    chat_model: str = os.getenv("RAG_CHAT_MODEL", "gemini-2.0-flash")
+    chat_model: str = os.getenv("RAG_CHAT_MODEL", "gemini-3.8-flash")
 
     def resolve(self, path: Path | str) -> Path:
         path = Path(path)
