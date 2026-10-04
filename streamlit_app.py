@@ -20,7 +20,16 @@ with st.sidebar:
             chunks = agent.ingest(Path(docs_path), reset=True)
         st.success(f"Indexed {len(chunks)} chunks.")
 
+    st.divider()
+    st.subheader("Quick questions")
+    st.caption("Ask questions like:")
+    if st.button("What is Neel's CGPA?", use_container_width=True):
+        st.session_state["suggested_question"] = "What is Neel Prajapati's CGPA?"
+    if st.button("Which projects has Neel worked on?", use_container_width=True):
+        st.session_state["suggested_question"] = "Which projects has Neel Prajapati worked on?"
+
 question = st.chat_input("Ask a question grounded in the indexed documents")
+question = question or st.session_state.pop("suggested_question", None)
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
