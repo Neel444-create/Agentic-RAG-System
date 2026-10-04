@@ -47,6 +47,10 @@ class GroundedAnswerer:
             return self._extractive_answer(question, contexts)
 
     def _extractive_answer(self, question: str, contexts: list[SearchResult]) -> str:
+        cv_answer = self._answer_cv_fact(question, contexts)
+        if cv_answer:
+            return cv_answer
+
         question_terms = {
             token
             for token in re.findall(r"[a-zA-Z0-9]+", question.lower())
@@ -65,6 +69,33 @@ class GroundedAnswerer:
             return "I do not know based on the ingested documents."
 
         best = sorted(candidates, key=lambda item: item[0], reverse=True)[:4]
-        lines = [f"- {sentence} ({source})" for _, sentence, source in best if sentence]
+        lines = [
+            f"- {self._summarize_excerpt(sentence)} ({source})"
+            for _, sentence, source in best
+            if sentence
+        ]
         return "Based on the retrieved documents:\n" + "\n".join(lines)
+
+    @staticmethod
+    def _answer_cv_fact(question: str, contexts: list[SearchResult]) -> str | None:
+        """Return compact answers for common structured CV facts when LLM generation is unavailable."""
+        normalized_question = question.lower()
+        combined_text = "\n".join(result.chunk.text for result in contexts)
+
+        if "cgpa" in normalized_question or "gpa" in normalized_question:
+            match = re.search(
+                r"B\.?(?:Tech)?\s+[^\n]{0,160}?\b(?:19|20)\d{2}\s+(\d{1,2}\.\d{1,2})\b",
+                combined_text,
+                flags=re.IGNORECASE,
+            )
+            if match:
+                source = contexts[0].chunk.metadata.get("source_name", contexts[0].chunk.source)
+                return f"Neel Prajapati's CGPA is {match.group(1)}. ({source})"
+        return None
+
+    @staticmethod
+    def _summarize_excerpt(text: str, limit: int = 360) -> str:
+        """Keep a fallback response readable when PDF extraction yields a single long line."""
+        compact = " ".join(text.split())
+        return compact if len(compact) <= limit else compact[:limit].rsplit(" ", 1)[0] + "…"
 
