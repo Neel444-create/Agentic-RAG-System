@@ -30,7 +30,7 @@ extractive answerer that quotes matching sentences from retrieved chunks.
 
 ## Scaling Planning
 
-- Add background ingestion jobs with document checksums and incremental updates.
+- Adding background ingestion jobs with document checksums and incremental updates.
 - Move Chroma to a managed vector database or deploy Weaviate/Qdrant for team-scale usage.
 - Add hybrid retrieval with BM25 plus vector search.
 - Store page numbers and exact spans for stronger citations.
