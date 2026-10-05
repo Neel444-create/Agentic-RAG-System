@@ -28,7 +28,7 @@ extractive answerer that quotes matching sentences from retrieved chunks.
 - The current UI supports manual re-indexing, not scheduled sync from external sources.
 - Conversation memory is limited to the Streamlit session display; retrieval is still per-query.
 
-## Scaling Suggestions
+## Scaling Planning
 
 - Add background ingestion jobs with document checksums and incremental updates.
 - Move Chroma to a managed vector database or deploy Weaviate/Qdrant for team-scale usage.
