@@ -17,6 +17,7 @@ TOKEN_PATTERN = re.compile(r"[a-zA-Z0-9]+")
 #Base class that defines the embedding interface.
 class Embedder(ABC):
     @abstractmethod
+    #Converts a list of text strings into vectors.
     def embed(self, texts: list[str], task_type: str = "RETRIEVAL_DOCUMENT") -> list[list[float]]:
         raise NotImplementedError
 
