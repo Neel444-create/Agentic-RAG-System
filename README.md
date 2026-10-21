@@ -46,7 +46,7 @@ streamlit run streamlit_app.py
 
 ```text
 Documents -> loaders -> chunker -> embedder -> Chroma vector DB
-                                                 |
+                                                  |
 Question -> embedder -> retriever -> grounded answerer -> cited response
 ```
 
@@ -54,20 +54,31 @@ The agent is intentionally conservative. It retrieves the top matching chunks, f
 matches using `RAG_MIN_SIMILARITY`, and instructs the LLM to answer only from supplied context.
 When no sufficiently relevant context is found, it returns: `I do not know based on the ingested documents.`
 
-## Project Structure
+## Repository Structure
 
 ```text
-src/rag_agent/
-  agent.py          Orchestrates ingestion and query flow
-  chunking.py       Text splitting and chunk IDs
-  cli.py            Command-line interface
-  config.py         Environment-driven settings
-  embeddings.py     OpenAI embedder plus local fallback
-  llm.py            Grounded answer generation
-  loaders.py        TXT/MD/CSV/PDF ingestion
-  vector_store.py   Chroma store plus JSON fallback
-data/sample_docs/   Demo knowledge base
-tests/              Focused unit tests
+Agentic-RAG-System/
+│
+├── src/rag_agent/          # Core RAG implementation
+│   ├── agent.py            # Main workflow coordinator
+│   ├── loaders.py          # Loads PDF, TXT, MD, CSV
+│   ├── chunking.py         # Splits documents into chunks
+│   ├── embeddings.py       # Creates vector embeddings
+│   ├── vector_store.py     # Chroma and JSON storage
+│   ├── llm.py              # Generates grounded answers
+│   ├── config.py           # Configuration and settings
+│   ├── models.py           # Data structures
+│   └── cli.py              # Terminal commands
+│
+├── data/sample_docs/       # Example knowledge base
+├── tests/                  # Unit tests
+├── scripts/                # Demo query examples
+├── streamlit_app.py        # Web chat interface
+├── pyproject.toml          # Dependencies and package setup
+├── requirements.txt        # Dependency list
+├── .env.example            # Environment configuration example
+├── README.md               # Overview and setup guide
+└── WRITEUP.md              # Architecture, limitations, improvements
 ```
 
 ## Configuration
