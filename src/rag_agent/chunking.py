@@ -4,7 +4,9 @@ import hashlib
 
 from .models import Chunk, Document
 
+#Purpose: This file splits large documents into smaller text sections called chunks, making it easier for the RAG system to retrieve relevant information.
 
+#Splits documents into chunks and creates a unique ID and metadata for each chunk.
 def chunk_documents(
     documents: list[Document],
     chunk_size: int = 900,
@@ -26,7 +28,7 @@ def chunk_documents(
             )
     return chunks
 
-
+#Splits text into smaller sections while trying to preserve paragraphs and maintain overlap.
 def split_text(text: str, chunk_size: int = 900, chunk_overlap: int = 160) -> list[str]:
     if not text.strip():
         return []
@@ -57,7 +59,7 @@ def split_text(text: str, chunk_size: int = 900, chunk_overlap: int = 160) -> li
         chunks.append(current.strip())
     return chunks
 
-
+#Splits a single long paragraph into smaller pieces when it exceeds the chunk size.
 def _split_long_text(text: str, chunk_size: int, chunk_overlap: int) -> list[str]:
     chunks: list[str] = []
     start = 0
