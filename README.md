@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # Agentic RAG Assignment
 
 Lightweight Retrieval-Augmented Generation system for ingesting documents, chunking text,
@@ -97,11 +96,6 @@ The local fallback is provided so the assignment can be demonstrated without pai
 For production-quality semantic retrieval, set `OPENAI_API_KEY` or replace the embedder with a
 local sentence-transformer model.
 
-=======
-Neel Prajapati <br>
+Neel Prajapati 
 Btech Undergrad IIT Hyderabad
 
-## Featured enterprise project
-
-- [Enterprise Leave & Asset Management System](enterprise-leave-asset-management/README.md): an Infosys-inspired FastAPI project with Admin, HR, and Employee RBAC; leave approval workflows; IT asset allocation; relational SQLAlchemy models; and pytest coverage.
->>>>>>> 399e5ec6d82dbb2ee760037a42f08f7556d87b34
