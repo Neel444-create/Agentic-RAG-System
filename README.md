@@ -1,60 +1,19 @@
 # Agentic RAG Assignment
 
-Lightweight Retrieval-Augmented Generation system for ingesting documents, chunking text,
-creating embeddings, storing vectors in Chroma, retrieving relevant context, and answering
-questions strictly from indexed sources.
+A lightweight Retrieval-Augmented Generation (RAG) system for ingesting documents, chunking text, generating embeddings, storing vectors, retrieving relevant context, and answering questions grounded strictly in the indexed sources.
 
 ## Features
 
-- Multi-format ingestion for TXT, Markdown, CSV, and PDF.
-- Recursive document discovery.
-- Overlapping text chunking with source metadata.
-- Chroma vector database persistence.
-- OpenAI embeddings and chat completion when `OPENAI_API_KEY` is set.
-- Offline deterministic embedding and extractive answer fallback for demos without credentials.
-- CLI query interface and optional Streamlit web UI.
-- Unknown-query handling through similarity thresholding and grounded answer prompts.
+- Multi-format ingestion for TXT, Markdown, CSV, and PDF files
+- Recursive document discovery across the knowledge base
+- Overlapping chunking with source metadata preservation
+- Chroma vector database persistence for local retrieval
+- OpenAI embeddings and chat completions when `OPENAI_API_KEY` is set
+- Offline deterministic embedding and extractive answer fallback for demos without API access
+- CLI-based query interface and optional Streamlit web UI
+- Conservative answer generation with similarity thresholding and grounded prompts
 
-## Quick Start
-
-```bash
-python -m venv .venv
-.venv\Scripts\activate
-pip install -e ".[dev]"
-copy .env.example .env
-```
-
-Index the included sample documents:
-
-```bash
-rag-agent ingest --path data/sample_docs
-```
-
-Ask a question:
-
-```bash
-rag-agent ask "What is the SLA for priority 1 incidents?"
-```
-
-Run the web UI:
-
-```bash
-streamlit run streamlit_app.py
-```
-
-## Architecture
-
-```text
-Documents -> loaders -> chunker -> embedder -> Chroma vector DB
-                                                  |
-Question -> embedder -> retriever -> grounded answerer -> cited response
-```
-
-The agent is intentionally conservative. It retrieves the top matching chunks, filters out weak
-matches using `RAG_MIN_SIMILARITY`, and instructs the LLM to answer only from supplied context.
-When no sufficiently relevant context is found, it returns: `I do not know based on the ingested documents.`
-
-## Repository Structure
+## Project Structure
 
 ```text
 Agentic-RAG-System/
@@ -78,20 +37,93 @@ Agentic-RAG-System/
 ├── requirements.txt        # Dependency list
 ├── .env.example            # Environment configuration example
 ├── README.md               # Overview and setup guide
-└── WRITEUP.md              # Architecture, limitations, improvements
+├── WRITEUP.md              # Architecture, limitations, and improvements
+└── .gitignore              # Git ignore rules
 ```
+
+## Quick Start
+
+### 1. Create a virtual environment
+
+```bash
+python -m venv .venv
+source .venv/bin/activate   # Linux/macOS
+# or
+.venv\Scripts\activate      # Windows
+```
+
+### 2. Install dependencies
+
+```bash
+pip install -e ".[dev]"
+```
+
+If you are using the plain requirements file:
+
+```bash
+pip install -r requirements.txt
+```
+
+### 3. Configure environment variables
+
+Copy the example environment file:
+
+```bash
+cp .env.example .env
+```
+
+Or on Windows:
+
+```bash
+copy .env.example .env
+```
+
+### 4. Ingest example documents
+
+```bash
+rag-agent ingest --path data/sample_docs
+```
+
+### 5. Ask a question
+
+```bash
+rag-agent ask "What is the SLA for priority 1 incidents?"
+```
+
+### 6. Run the web UI
+
+```bash
+streamlit run streamlit_app.py
+```
+
+## Architecture
+
+```text
+Documents -> loaders -> chunker -> embedder -> Chroma vector DB
+                                                  |
+Question -> embedder -> retriever -> grounded answerer -> cited response
+```
+
+The system is intentionally conservative:
+- It retrieves the top matching chunks.
+- It filters out weak matches using `RAG_MIN_SIMILARITY`.
+- It prompts the LLM to answer only from the retrieved context.
+- If no relevant context is found, it returns:
+  `I do not know based on the ingested documents.`
 
 ## Configuration
 
 Environment variables can be placed in `.env`:
 
-- `OPENAI_API_KEY`: enables OpenAI embeddings and answer generation.
-- `RAG_EMBEDDING_MODEL`: defaults to `text-embedding-3-small`.
-- `RAG_CHAT_MODEL`: defaults to `gpt-4o-mini`.
-- `RAG_TOP_K`: number of retrieved chunks, default `5`.
-- `RAG_MIN_SIMILARITY`: relevance cutoff, default `0.18`.
+- `OPENAI_API_KEY`: Enables OpenAI embeddings and answer generation.
+- `RAG_EMBEDDING_MODEL`: Defaults to `text-embedding-3-small`
+- `RAG_CHAT_MODEL`: Defaults to `gpt-4o-mini`
+- `RAG_TOP_K`: Number of retrieved chunks, default `5`
+- `RAG_MIN_SIMILARITY`: Relevance cutoff, default `0.18`
 
 ## Evaluation Queries
+
+These are example questions the system is designed to answer:
 
 - `What is the SLA for priority 1 incidents?`
 - `How should customer data be handled?`
@@ -99,14 +131,13 @@ Environment variables can be placed in `.env`:
 - `What documents are required before vendor onboarding?`
 - `What is the company's policy on space travel reimbursement?`
 
-The last query is intentionally out of scope and should produce an unknown answer.
+The final question is intentionally out of scope and should return an unknown-answer response.
 
 ## Notes
 
-The local fallback is provided so the assignment can be demonstrated without paid API access.
-For production-quality semantic retrieval, set `OPENAI_API_KEY` or replace the embedder with a
-local sentence-transformer model.
+This project includes a local fallback so it can be demonstrated without paid API access. For production-grade semantic retrieval, you can set `OPENAI_API_KEY` or replace the default embedder with a stronger sentence-transformer model.
 
-Neel Prajapati 
-Btech Undergrad IIT Hyderabad
+## Author
 
+Neel Prajapati  
+B.Tech Undergrad, IIT Hyderabad
