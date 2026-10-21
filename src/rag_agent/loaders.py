@@ -8,6 +8,8 @@ from .models import Document
 
 SUPPORTED_EXTENSIONS = {".txt", ".md", ".csv", ".pdf"}
 
+#loaders.py is responsible for reading and cleaning documents — it does not create embeddings or answer questions.
+
 
 # Finds supported files (.txt, .md, .csv, .pdf) inside a folder or accepts a single supported file.
 def discover_files(path: Path) -> list[Path]:
