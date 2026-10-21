@@ -9,6 +9,7 @@ from .models import Document
 SUPPORTED_EXTENSIONS = {".txt", ".md", ".csv", ".pdf"}
 
 
+# Finds supported files (.txt, .md, .csv, .pdf) inside a folder or accepts a single supported file.
 def discover_files(path: Path) -> list[Path]:
     if path.is_file():
         return [path] if path.suffix.lower() in SUPPORTED_EXTENSIONS else []
@@ -17,6 +18,7 @@ def discover_files(path: Path) -> list[Path]:
     )
 
 
+# Reads one file and extracts its text based on its format.
 def load_document(path: Path) -> Document:
     suffix = path.suffix.lower()
     if suffix in {".txt", ".md"}:
@@ -31,15 +33,18 @@ def load_document(path: Path) -> Document:
     return Document(text=normalize_text(text), source=path, metadata={"file_type": suffix.lstrip(".")})
 
 
+# Loads all supported documents found in a folder.
 def load_documents(path: Path) -> list[Document]:
     return [load_document(file) for file in discover_files(path)]
 
 
+# Cleans the text by removing extra spaces, blank lines, and unwanted characters.
 def normalize_text(text: str) -> str:
     lines = [" ".join(line.strip().split()) for line in text.replace("\x00", " ").splitlines()]
     return "\n".join(line for line in lines if line)
 
 
+# Reads a CSV file row by row and converts each row into readable text.
 def _load_csv(path: Path) -> str:
     rows: list[str] = []
     with path.open(newline="", encoding="utf-8", errors="ignore") as handle:
@@ -50,6 +55,7 @@ def _load_csv(path: Path) -> str:
     return "\n".join(rows)
 
 
+# Extracts text from PDF pages using the pypdf library.
 def _load_pdf(path: Path) -> str:
     try:
         from pypdf import PdfReader
@@ -59,4 +65,3 @@ def _load_pdf(path: Path) -> str:
     reader = PdfReader(str(path))
     pages = [page.extract_text() or "" for page in reader.pages]
     return "\n\n".join(pages)
-
