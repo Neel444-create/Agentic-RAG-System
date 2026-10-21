@@ -135,7 +135,7 @@ The final question is intentionally out of scope and should return an unknown-an
 
 ## Notes
 
-This project includes a local fallback so it can be demonstrated without paid API access. For production-grade semantic retrieval, you can set `OPENAI_API_KEY` or replace the default embedder with a stronger sentence-transformer model.
+This project includes a local fallback so it can be demonstrated without paid API access. For production-grade semantic retrieval, need to set `OPENAI_API_KEY` or replace the default embedder with a stronger sentence-transformer model.
 
 ## Author
 
