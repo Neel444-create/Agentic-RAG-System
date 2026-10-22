@@ -8,6 +8,23 @@ import numpy as np
 from .embeddings import Embedder
 from .models import Chunk, SearchResult
 
+#Purpose: This file stores document chunks as vectors and searches for the chunks most relevant to a user's question.
+#It provides two storage options: ChromaDB for persistent vector storage and JSON as a lightweight fallback.
+
+"""Name         	What it does
+ChromaVectorStore	Stores and searches vectors using ChromaDB.
+JsonVectorStore	Stores vectors and chunk data in a local JSON file.
+__init__()	Initializes the database or loads the existing JSON index.
+reset()	Clears the existing index.
+add()	Converts chunks into embeddings and saves them with their metadata.
+search()	Converts a question into a vector and finds the most similar chunks."""
+
+"""Term	        Simple meaning
+Vector store	A system for storing and searching numerical vectors.
+Embedding	A numerical representation of text.
+Metadata	Extra information, such as filename and chunk number.
+Similarity score	A measure of how closely a retrieved chunk matches the question.
+Top-K	The number of best matching results to retrieve; the default here is 5."""
 
 class ChromaVectorStore:
     def __init__(self, persist_dir: Path, collection_name: str, embedder: Embedder):
