@@ -3,7 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-
+#Purpose: This file defines the data structures used to represent documents, chunks, search results, and final answers throughout the RAG system.
+#Automatically generates common methods for a data-holding class.
 @dataclass(frozen=True)
 class Document:
     text: str
