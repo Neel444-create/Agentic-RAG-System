@@ -5,7 +5,8 @@ from pathlib import Path
 
 from .agent import RagAgent
 
-
+#Purpose: This file allows users to run the RAG system through the terminal using commands instead of opening the Python code directly.
+#Defines the available terminal commands and their arguments.
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Agentic RAG assignment CLI")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -23,7 +24,7 @@ def build_parser() -> argparse.ArgumentParser:
     chat.add_argument("--json-store", action="store_true", help="Use local JSON vector store fallback")
     return parser
 
-
+#Reads the command entered by the user and runs the appropriate operation.
 def main() -> None:
     args = build_parser().parse_args()
     agent = RagAgent(use_json_store=getattr(args, "json_store", False))
@@ -45,7 +46,7 @@ def main() -> None:
                 break
             _print_answer(agent.ask(question))
 
-
+#Displays the answer, retrieved sources, similarity scores, and answering mode.
 def _print_answer(answer) -> None:
     print("\nAnswer:")
     print(answer.answer)
