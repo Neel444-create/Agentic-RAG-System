@@ -5,7 +5,9 @@ import re
 from .config import Settings
 from .models import SearchResult
 
+#Purpose: This file generates answers using the document chunks retrieved by vector_store.py. It tries to answer using Gemini; if the API is unavailable, it uses a local extractive fallback.
 
+#Main class responsible for generating answers based on retrieved context.
 class GroundedAnswerer:
     def __init__(self, settings: Settings):
         self.settings = settings
@@ -15,10 +17,12 @@ class GroundedAnswerer:
 
             self.client = genai.Client(api_key=settings.gemini_api_key)
 
+    #Property that checks whether the Gemini client is available.
     @property
     def uses_llm(self) -> bool:
         return self.client is not None
 
+    #Chooses the answer-generation method or returns an unknown answer if no relevant context exists.
     def answer(self, question: str, contexts: list[SearchResult]) -> str:
         if not contexts:
             return "I do not know based on the ingested documents."
@@ -26,6 +30,7 @@ class GroundedAnswerer:
             return self._gemini_answer(question, contexts)
         return self._extractive_answer(question, contexts)
 
+        #Sends the question and retrieved chunks to Gemini with instructions to answer only from the context.
     def _gemini_answer(self, question: str, contexts: list[SearchResult]) -> str:
         context_block = "\n\n".join(
             f"[{index}] Source: {result.chunk.metadata.get('source_name', result.chunk.source)}\n"
@@ -46,6 +51,7 @@ class GroundedAnswerer:
         except Exception:
             return self._extractive_answer(question, contexts)
 
+    #Creates a simple answer by selecting relevant sentences from retrieved chunks.
     def _extractive_answer(self, question: str, contexts: list[SearchResult]) -> str:
         cv_answer = self._answer_cv_fact(question, contexts)
         if cv_answer:
@@ -77,6 +83,7 @@ class GroundedAnswerer:
         return "Based on the retrieved documents:\n" + "\n".join(lines)
 
     @staticmethod
+    #Handles a specific CV-related question, such as asking for CGPA, when the required information is present.
     def _answer_cv_fact(question: str, contexts: list[SearchResult]) -> str | None:
         """Return compact answers for common structured CV facts when LLM generation is unavailable."""
         normalized_question = question.lower()
@@ -94,6 +101,7 @@ class GroundedAnswerer:
         return None
 
     @staticmethod
+    #Shortens long text excerpts to make fallback answers more readable.
     def _summarize_excerpt(text: str, limit: int = 360) -> str:
         """Keep a fallback response readable when PDF extraction yields a single long line."""
         compact = " ".join(text.split())
