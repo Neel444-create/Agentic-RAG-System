@@ -12,6 +12,7 @@ st.set_page_config(page_title="Agentic RAG Assignment", layout="wide")
 st.title("Agentic RAG System")
 
 agent = RagAgent()
+summary_source: str | None = None
 
 
 def save_uploaded_pdf(uploaded_file) -> Path:
@@ -48,6 +49,17 @@ with st.sidebar:
             st.warning("No readable text was found. This may be a scanned PDF that needs OCR.")
 
     st.divider()
+    st.subheader("Document summary")
+    indexed_sources = agent.indexed_sources()
+    if indexed_sources:
+        selected_summary_source = st.selectbox("Indexed document", indexed_sources)
+        if st.button("Summarize selected document", use_container_width=True):
+            summary_source = selected_summary_source
+    else:
+        selected_summary_source = None
+        st.caption("Index or upload a document before summarizing it.")
+
+    st.divider()
     st.subheader("Quick questions")
     st.caption("Ask questions like:")
     if st.button("What is Neel's CGPA?", use_container_width=True):
@@ -60,11 +72,36 @@ question = question or st.session_state.pop("suggested_question", None)
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
+if (
+    question
+    and re.match(r"^\s*(summarize|summary|summarise|summarisation|summarization)\b", question, re.I)
+    and selected_summary_source
+):
+    summary_source = selected_summary_source
+    question = None
+
 for role, content in st.session_state.messages:
     with st.chat_message(role):
         st.markdown(content)
 
-if question:
+if summary_source:
+    summary_request = f"Summarize {summary_source}"
+    st.session_state.messages.append(("user", summary_request))
+    with st.chat_message("user"):
+        st.markdown(summary_request)
+
+    summary_cache = st.session_state.setdefault("document_summaries", {})
+    with st.chat_message("assistant"):
+        if summary_source in summary_cache:
+            summary = summary_cache[summary_source]
+        else:
+            with st.spinner("Summarizing the indexed document..."):
+                summary = agent.summarize_document(summary_source)
+            summary_cache[summary_source] = summary
+        st.markdown(summary)
+    st.session_state.messages.append(("assistant", summary))
+
+elif question:
     st.session_state.messages.append(("user", question))
     with st.chat_message("user"):
         st.markdown(question)

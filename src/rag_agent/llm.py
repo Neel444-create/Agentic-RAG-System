@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 
 from .config import Settings
-from .models import SearchResult
+from .models import Chunk, SearchResult
 
 #Purpose: This file generates answers using the document chunks retrieved by vector_store.py. It tries to answer using Gemini; if the API is unavailable, it uses a local extractive fallback.
 
@@ -29,6 +29,32 @@ class GroundedAnswerer:
         if self.client:
             return self._gemini_answer(question, contexts)
         return self._extractive_answer(question, contexts)
+
+    def summarize(self, chunks: list[Chunk], source_name: str) -> str:
+        """Create a concise document summary without a vector-search step."""
+        if not chunks:
+            return "This document has not been indexed yet."
+
+        ordered_chunks = sorted(chunks, key=lambda chunk: chunk.chunk_index)
+        context = self._summary_context(ordered_chunks)
+        if self.client:
+            prompt = (
+                "Summarize the document below using only its content. Return a short overview followed "
+                "by at most 6 key bullet points. Include important names, dates, numbers, and action items "
+                "when present. Do not add information that is not in the document.\n\n"
+                f"Document: {source_name}\n\n{context}"
+            )
+            try:
+                response = self.client.models.generate_content(
+                    model=self.settings.chat_model,
+                    contents=prompt,
+                )
+                if response.text:
+                    return response.text
+            except Exception:
+                pass
+
+        return self._extractive_summary(ordered_chunks, source_name)
 
         #Sends the question and retrieved chunks to Gemini with instructions to answer only from the context.
     def _gemini_answer(self, question: str, contexts: list[SearchResult]) -> str:
@@ -106,4 +132,31 @@ class GroundedAnswerer:
         """Keep a fallback response readable when PDF extraction yields a single long line."""
         compact = " ".join(text.split())
         return compact if len(compact) <= limit else compact[:limit].rsplit(" ", 1)[0] + "…"
+
+    @staticmethod
+    def _summary_context(chunks: list[Chunk], limit: int = 18_000) -> str:
+        """Bound prompt size so document summaries remain quick and predictable."""
+        included: list[str] = []
+        remaining = limit
+        for chunk in chunks:
+            if remaining <= 0:
+                break
+            excerpt = chunk.text[:remaining]
+            included.append(excerpt)
+            remaining -= len(excerpt)
+        return "\n\n".join(included)
+
+    @staticmethod
+    def _extractive_summary(chunks: list[Chunk], source_name: str) -> str:
+        """Provide a concise local summary if the configured model is unavailable."""
+        text = " ".join(chunk.text for chunk in chunks)
+        sentences = re.split(r"(?<=[.!?])\s+", text)
+        excerpts = [
+            GroundedAnswerer._summarize_excerpt(sentence, limit=240)
+            for sentence in sentences
+            if len(sentence.split()) >= 5
+        ][:6]
+        if not excerpts:
+            excerpts = [GroundedAnswerer._summarize_excerpt(text, limit=700)]
+        return f"Summary of {source_name}:\n" + "\n".join(f"- {excerpt}" for excerpt in excerpts)
 

@@ -49,3 +49,20 @@ class RagAgent:
             used_llm=self.answerer.uses_llm,
         )
 
+    def indexed_sources(self) -> list[str]:
+        return sorted(
+            {
+                chunk.metadata.get("source_name", Path(chunk.source).name)
+                for chunk in self.store.all_chunks()
+            }
+        )
+
+    def summarize_document(self, source_name: str) -> str:
+        """Summarize one indexed document directly, without semantic retrieval."""
+        chunks = [
+            chunk
+            for chunk in self.store.all_chunks()
+            if chunk.metadata.get("source_name", Path(chunk.source).name) == source_name
+        ]
+        return self.answerer.summarize(chunks, source_name)
+

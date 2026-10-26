@@ -90,6 +90,22 @@ class ChromaVectorStore:
             results.append(SearchResult(chunk=chunk, similarity=1.0 - float(distance)))
         return results
 
+    def all_chunks(self) -> list[Chunk]:
+        """Return stored chunks for direct document operations such as summarization."""
+        response = self.collection.get(include=["documents", "metadatas"])
+        return [
+            Chunk(
+                id=chunk_id,
+                text=document,
+                source=str(metadata["source"]),
+                chunk_index=int(metadata["chunk_index"]),
+                metadata={key: str(value) for key, value in metadata.items()},
+            )
+            for chunk_id, document, metadata in zip(
+                response["ids"], response["documents"], response["metadatas"]
+            )
+        ]
+
 
 class JsonVectorStore:
     """Tiny fallback store useful for tests and locked-down environments."""
@@ -146,4 +162,16 @@ class JsonVectorStore:
                 )
             )
         return sorted(scored, key=lambda result: result.similarity, reverse=True)[:top_k]
+
+    def all_chunks(self) -> list[Chunk]:
+        return [
+            Chunk(
+                id=item["chunk"]["id"],
+                text=item["chunk"]["text"],
+                source=item["chunk"]["source"],
+                chunk_index=item["chunk"]["chunk_index"],
+                metadata=item["chunk"]["metadata"],
+            )
+            for item in self.items
+        ]
 
