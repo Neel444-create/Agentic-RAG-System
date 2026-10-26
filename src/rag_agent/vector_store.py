@@ -85,7 +85,7 @@ class ChromaVectorStore:
                 text=document,
                 source=str(metadata["source"]),
                 chunk_index=int(metadata["chunk_index"]),
-                metadata={key: str(value) for key, value in metadata.items()},
+                metadata={key: str(value) for key, value in (metadata or {}).items()},
             )
             results.append(SearchResult(chunk=chunk, similarity=1.0 - float(distance)))
         return results
@@ -93,17 +93,18 @@ class ChromaVectorStore:
     def all_chunks(self) -> list[Chunk]:
         """Return stored chunks for direct document operations such as summarization."""
         response = self.collection.get(include=["documents", "metadatas"])
+        ids = response.get("ids") or []
+        documents = response.get("documents") or []
+        metadatas = response.get("metadatas") or []
         return [
             Chunk(
                 id=chunk_id,
-                text=document,
-                source=str(metadata["source"]),
-                chunk_index=int(metadata["chunk_index"]),
-                metadata={key: str(value) for key, value in metadata.items()},
+                text=document or "",
+                source=str((metadata or {}).get("source", "")),
+                chunk_index=int((metadata or {}).get("chunk_index", 0)),
+                metadata={key: str(value) for key, value in (metadata or {}).items()},
             )
-            for chunk_id, document, metadata in zip(
-                response["ids"], response["documents"], response["metadatas"]
-            )
+            for chunk_id, document, metadata in zip(ids, documents, metadatas)
         ]
 
 

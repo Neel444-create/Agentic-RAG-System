@@ -50,12 +50,16 @@ class RagAgent:
         )
 
     def indexed_sources(self) -> list[str]:
-        return sorted(
-            {
-                chunk.metadata.get("source_name", Path(chunk.source).name)
-                for chunk in self.store.all_chunks()
-            }
-        )
+        try:
+            return sorted(
+                {
+                    chunk.metadata.get("source_name", Path(chunk.source).name)
+                    for chunk in self.store.all_chunks()
+                    if chunk.source or chunk.metadata.get("source_name")
+                }
+            )
+        except (AttributeError, KeyError, TypeError):
+            return []
 
     def summarize_document(self, source_name: str) -> str:
         """Summarize one indexed document directly, without semantic retrieval."""

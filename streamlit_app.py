@@ -57,7 +57,7 @@ with st.sidebar:
             summary_source = selected_summary_source
     else:
         selected_summary_source = None
-        st.caption("Index or upload a document before summarizing it.")
+        st.caption("Index or upload a document before summarizing it. If you just upgraded, rebuild the index.")
 
     st.divider()
     st.subheader("Quick questions")
