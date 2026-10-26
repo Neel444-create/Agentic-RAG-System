@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 import streamlit as st
@@ -12,6 +13,16 @@ st.title("Agentic RAG System")
 
 agent = RagAgent()
 
+
+def save_uploaded_pdf(uploaded_file) -> Path:
+    """Persist an uploaded PDF locally so the standard loader can parse and index it."""
+    safe_name = re.sub(r"[^A-Za-z0-9._-]", "_", uploaded_file.name)
+    upload_dir = agent.settings.resolve("data/uploads")
+    upload_dir.mkdir(parents=True, exist_ok=True)
+    destination = upload_dir / safe_name
+    destination.write_bytes(uploaded_file.getvalue())
+    return destination
+
 with st.sidebar:
     st.header("Index")
     docs_path = st.text_input("Document folder", "data/sample_docs")
@@ -19,6 +30,22 @@ with st.sidebar:
         with st.spinner("Ingesting and embedding documents..."):
             chunks = agent.ingest(Path(docs_path), reset=True)
         st.success(f"Indexed {len(chunks)} chunks.")
+
+    st.divider()
+    st.subheader("Upload a PDF")
+    uploaded_pdf = st.file_uploader(
+        "Add a document for this session",
+        type=["pdf"],
+        help="The PDF is parsed and added to the current index. It is not committed to GitHub.",
+    )
+    if uploaded_pdf and st.button("Index uploaded PDF", use_container_width=True):
+        with st.spinner(f"Parsing and indexing {uploaded_pdf.name}..."):
+            uploaded_path = save_uploaded_pdf(uploaded_pdf)
+            chunks = agent.ingest(uploaded_path, reset=False)
+        if chunks:
+            st.success(f"Added {uploaded_pdf.name} ({len(chunks)} chunks).")
+        else:
+            st.warning("No readable text was found. This may be a scanned PDF that needs OCR.")
 
     st.divider()
     st.subheader("Quick questions")
