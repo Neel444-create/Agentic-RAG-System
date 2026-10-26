@@ -11,7 +11,14 @@ from rag_agent.agent import RagAgent
 st.set_page_config(page_title="Agentic RAG Assignment", layout="wide")
 st.title("Agentic RAG System")
 
-agent = RagAgent()
+
+@st.cache_resource
+def get_agent() -> RagAgent:
+    """Reuse the vector store and model client across Streamlit reruns."""
+    return RagAgent()
+
+
+agent = get_agent()
 summary_source: str | None = None
 
 

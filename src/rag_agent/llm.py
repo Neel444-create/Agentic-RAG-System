@@ -45,9 +45,15 @@ class GroundedAnswerer:
                 f"Document: {source_name}\n\n{context}"
             )
             try:
+                from google.genai import types
+
                 response = self.client.models.generate_content(
                     model=self.settings.chat_model,
                     contents=prompt,
+                    config=types.GenerateContentConfig(
+                        temperature=0.1,
+                        max_output_tokens=300,
+                    ),
                 )
                 if response.text:
                     return response.text
@@ -134,17 +140,19 @@ class GroundedAnswerer:
         return compact if len(compact) <= limit else compact[:limit].rsplit(" ", 1)[0] + "…"
 
     @staticmethod
-    def _summary_context(chunks: list[Chunk], limit: int = 18_000) -> str:
-        """Bound prompt size so document summaries remain quick and predictable."""
-        included: list[str] = []
-        remaining = limit
-        for chunk in chunks:
-            if remaining <= 0:
-                break
-            excerpt = chunk.text[:remaining]
-            included.append(excerpt)
-            remaining -= len(excerpt)
-        return "\n\n".join(included)
+    def _summary_context(chunks: list[Chunk], limit: int = 7_000) -> str:
+        """Use a representative, bounded sample to keep summaries fast."""
+        text = "\n\n".join(chunk.text for chunk in chunks)
+        if len(text) <= limit:
+            return text
+
+        # Sample the beginning, middle, and end rather than sending a long prefix only.
+        section_size = limit // 3
+        middle_start = max(0, (len(text) - section_size) // 2)
+        return "\n\n[Beginning]\n" + text[:section_size] + (
+            "\n\n[Middle]\n" + text[middle_start : middle_start + section_size]
+            + "\n\n[End]\n" + text[-section_size:]
+        )
 
     @staticmethod
     def _extractive_summary(chunks: list[Chunk], source_name: str) -> str:
