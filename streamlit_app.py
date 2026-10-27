@@ -99,12 +99,20 @@ if summary_source:
 
     summary_cache = st.session_state.setdefault("document_summaries", {})
     with st.chat_message("assistant"):
-        if summary_source in summary_cache:
-            summary = summary_cache[summary_source]
-        else:
-            with st.spinner("Summarizing the indexed document..."):
-                summary = agent.summarize_document(summary_source)
-            summary_cache[summary_source] = summary
+        with st.status("Reading selected document...", expanded=True) as status:
+            def update_summary_progress(message: str) -> None:
+                status.update(label=message, state="running")
+                st.write(message)
+
+            if summary_source in summary_cache:
+                summary = summary_cache[summary_source]
+                st.write("Using the summary saved for this session...")
+            else:
+                summary = agent.summarize_document(
+                    summary_source, on_progress=update_summary_progress
+                )
+                summary_cache[summary_source] = summary
+            status.update(label="Summary ready", state="complete", expanded=False)
         st.markdown(summary)
     st.session_state.messages.append(("assistant", summary))
 
@@ -114,8 +122,13 @@ elif question:
         st.markdown(question)
 
     with st.chat_message("assistant"):
-        with st.spinner("Retrieving context..."):
-            answer = agent.ask(question)
+        with st.status("Understanding your question...", expanded=True) as status:
+            def update_answer_progress(message: str) -> None:
+                status.update(label=message, state="running")
+                st.write(message)
+
+            answer = agent.ask(question, on_progress=update_answer_progress)
+            status.update(label="Answer ready", state="complete", expanded=False)
         st.markdown(answer.answer)
         if answer.sources:
             with st.expander("Retrieved sources"):

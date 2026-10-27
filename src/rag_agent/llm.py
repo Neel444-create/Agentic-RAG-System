@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 import re
 
 from .config import Settings
@@ -30,7 +31,12 @@ class GroundedAnswerer:
             return self._gemini_answer(question, contexts)
         return self._extractive_answer(question, contexts)
 
-    def summarize(self, chunks: list[Chunk], source_name: str) -> str:
+    def summarize(
+        self,
+        chunks: list[Chunk],
+        source_name: str,
+        on_progress: Callable[[str], None] | None = None,
+    ) -> str:
         """Create a concise document summary without a vector-search step."""
         if not chunks:
             return "This document has not been indexed yet."
@@ -47,6 +53,8 @@ class GroundedAnswerer:
             try:
                 from google.genai import types
 
+                if on_progress:
+                    on_progress("Generating summary...")
                 response = self.client.models.generate_content(
                     model=self.settings.chat_model,
                     contents=prompt,
